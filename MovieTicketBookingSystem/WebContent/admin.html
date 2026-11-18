@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cinema Admin Dashboard — CineVerse</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div id="navbar-host"></div>
+
+    <main class="main-container">
+        <div style="margin-bottom: 24px;">
+            <h1 style="font-size: 2rem; font-weight: 800;">Admin Control Center</h1>
+            <p style="color: var(--text-secondary);">Manage movies, theatres, 96-seat auditorium screens, showtimes, seat occupancy, and users.</p>
+        </div>
+
+        <div id="admin-alert" style="display: none;"></div>
+
+        <div class="admin-tabs">
+            <button type="button" class="tab-btn active" data-tab="tab-movies">Movies</button>
+            <button type="button" class="tab-btn" data-tab="tab-theatres">Theatres &amp; Screens</button>
+            <button type="button" class="tab-btn" data-tab="tab-shows">Showtimes &amp; Occupancy</button>
+            <button type="button" class="tab-btn" data-tab="tab-bookings">All Bookings</button>
+            <button type="button" class="tab-btn" data-tab="tab-users">User Accounts</button>
+        </div>
+
+        <!-- TAB 1: MOVIES -->
+        <section id="tab-movies" class="admin-tab-pane">
+            <div class="panel-card">
+                <h3 id="movie-form-heading" style="margin-bottom: 16px;">Add / Edit Movie</h3>
+                <form id="admin-movie-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
+                    <input type="hidden" id="movie-id" value="0">
+                    <div class="form-group">
+                        <label class="form-label">Movie Title</label>
+                        <input type="text" id="movie-title" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Genre</label>
+                        <input type="text" id="movie-genre" class="form-control" placeholder="Sci-Fi" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Language</label>
+                        <input type="text" id="movie-language" class="form-control" placeholder="English" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Duration (Minutes)</label>
+                        <input type="number" id="movie-duration" class="form-control" value="140" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Certification / Rating</label>
+                        <input type="text" id="movie-rating" class="form-control" value="UA 13+" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Release Date</label>
+                        <input type="date" id="movie-release" class="form-control" value="2026-11-20" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Badge Text</label>
+                        <input type="text" id="movie-badge" class="form-control" value="IMAX LASER">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Poster Gradient CSS</label>
+                        <input type="text" id="movie-poster" class="form-control" value="linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #e50914 100%)">
+                    </div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label class="form-label">Description</label>
+                        <input type="text" id="movie-description" class="form-control" required>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" class="btn btn-primary">Save Movie</button>
+                        <button type="button" id="movie-reset-btn" class="btn btn-outline">Clear</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="panel-card data-table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Title</th>
+                            <th>Genre</th>
+                            <th>Language</th>
+                            <th>Duration</th>
+                            <th>Rating</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-movies-tbody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- TAB 2: THEATRES & SCREENS -->
+        <section id="tab-theatres" class="admin-tab-pane" style="display: none;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px;">
+                <div class="panel-card">
+                    <h3 style="margin-bottom: 14px;">Add Theatre</h3>
+                    <form id="admin-theatre-form" class="auth-form">
+                        <div class="form-group">
+                            <label class="form-label">Theatre Name</label>
+                            <input type="text" id="th-name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">City</label>
+                            <input type="text" id="th-city" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Address</label>
+                            <input type="text" id="th-address" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Theatre</button>
+                    </form>
+                </div>
+
+                <div class="panel-card">
+                    <h3 style="margin-bottom: 14px;">Add Auditorium Screen (Auto-generates 96 Seats)</h3>
+                    <form id="admin-screen-form" class="auth-form">
+                        <div class="form-group">
+                            <label class="form-label">Select Theatre</label>
+                            <select id="sc-theatre-id" class="form-control" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Screen Name</label>
+                            <input type="text" id="sc-name" class="form-control" placeholder="Screen 3 - Dolby Laser" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Create Screen</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="panel-card data-table-wrap">
+                <h3 style="margin-bottom: 12px;">Theatres</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>City</th>
+                            <th>Address</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-theatres-tbody"></tbody>
+                </table>
+            </div>
+
+            <div class="panel-card data-table-wrap">
+                <h3 style="margin-bottom: 12px;">Screens</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Theatre</th>
+                            <th>City</th>
+                            <th>Screen Name</th>
+                            <th>Capacity</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-screens-tbody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- TAB 3: SHOWTIMES & OCCUPANCY -->
+        <section id="tab-shows" class="admin-tab-pane" style="display: none;">
+            <div class="panel-card">
+                <h3 style="margin-bottom: 14px;">Schedule Showtime (Date &amp; Time Only — Zero Pricing)</h3>
+                <form id="admin-show-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; align-items: end;">
+                    <div class="form-group">
+                        <label class="form-label">Movie</label>
+                        <select id="sh-movie-id" class="form-control" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Theatre &amp; Screen</label>
+                        <select id="sh-screen-id" class="form-control" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Show Date</label>
+                        <input type="date" id="sh-date" class="form-control" value="2026-11-20" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Show Time</label>
+                        <input type="text" id="sh-time" class="form-control" value="07:30 PM" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Schedule Show</button>
+                </form>
+            </div>
+
+            <div class="panel-card data-table-wrap">
+                <h3 style="margin-bottom: 12px;">Live Showtime Seat Occupancy</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Movie</th>
+                            <th>Theatre &amp; Screen</th>
+                            <th>Date &amp; Time</th>
+                            <th>Seat Occupancy</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-shows-tbody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- TAB 4: ALL BOOKINGS -->
+        <section id="tab-bookings" class="admin-tab-pane" style="display: none;">
+            <div class="panel-card data-table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Booking ID</th>
+                            <th>User</th>
+                            <th>Movie</th>
+                            <th>Theatre / Screen</th>
+                            <th>Showtime</th>
+                            <th>Seats</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-bookings-tbody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- TAB 5: USERS -->
+        <section id="tab-users" class="admin-tab-pane" style="display: none;">
+            <div class="panel-card data-table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Role</th>
+                            <th>Joined</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-users-tbody"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        CineVerse Standalone Java Cinema Booking System
+    </footer>
+
+    <script src="/js/app.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            await CineVerse.initNavbar("admin");
+
+            if (!CineVerse.sessionUser || CineVerse.sessionUser.role !== "ADMIN") {
+                window.location.href = "/login.html?redirect=/admin.html";
+                return;
+            }
+
+            const alertBox = document.getElementById("admin-alert");
+            let cachedData = null;
+
+            function notify(msg, isError = false) {
+                alertBox.className = `alert-box ${isError ? "alert-error" : "alert-success"}`;
+                alertBox.textContent = msg;
+                alertBox.style.display = "block";
+            }
+
+            document.querySelectorAll(".tab-btn").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+                    document.querySelectorAll(".admin-tab-pane").forEach((p) => p.style.display = "none");
+                    btn.classList.add("active");
+                    document.getElementById(btn.getAttribute("data-tab")).style.display = "block";
+                });
+            });
+
+            async function refreshOverview() {
+                const res = await fetch("/api/admin/overview");
+                if (!res.ok) {
+                    notify("Failed to load admin overview.", true);
+                    return;
+                }
+                cachedData = await res.json();
+                renderMovies();
+                renderTheatresAndScreens();
+                renderShows();
+                renderBookings();
+                renderUsers();
+            }
+
+            function renderMovies() {
+                const tbody = document.getElementById("admin-movies-tbody");
+                tbody.innerHTML = cachedData.movies.map((m) => `
+                    <tr>
+                        <td>${m.id}</td>
+                        <td><strong>${CineVerse.escapeHtml(m.title)}</strong></td>
+                        <td>${CineVerse.escapeHtml(m.genre)}</td>
+                        <td>${CineVerse.escapeHtml(m.language)}</td>
+                        <td>${m.durationMinutes} min</td>
+                        <td>${CineVerse.escapeHtml(m.rating)}</td>
+                        <td style="display: flex; gap: 8px;">
+                            <button type="button" class="btn btn-outline btn-sm edit-movie-btn" data-id="${m.id}">Edit</button>
+                            <button type="button" class="btn btn-danger btn-sm del-movie-btn" data-id="${m.id}">Delete</button>
+                        </td>
+                    </tr>
+                `).join("");
+
+                tbody.querySelectorAll(".edit-movie-btn").forEach((btn) => {
+                    btn.addEventListener("click", () => {
+                        const m = cachedData.movies.find((x) => x.id === parseInt(btn.getAttribute("data-id"), 10));
+                        if (!m) return;
+                        document.getElementById("movie-id").value = m.id;
+                        document.getElementById("movie-title").value = m.title;
+                        document.getElementById("movie-genre").value = m.genre;
+                        document.getElementById("movie-language").value = m.language;
+                        document.getElementById("movie-duration").value = m.durationMinutes;
+                        document.getElementById("movie-rating").value = m.rating;
+                        document.getElementById("movie-release").value = m.releaseDate;
+                        document.getElementById("movie-badge").value = m.badgeText;
+                        document.getElementById("movie-poster").value = m.posterColor;
+                        document.getElementById("movie-description").value = m.description;
+                        document.getElementById("movie-form-heading").textContent = `Editing Movie #${m.id}`;
+                    });
+                });
+
+                tbody.querySelectorAll(".del-movie-btn").forEach((btn) => {
+                    btn.addEventListener("click", async () => {
+                        const res = await CineVerse.postForm("/api/admin/movie/delete", { id: btn.getAttribute("data-id") });
+                        notify(res.data.message || res.data.error, !res.ok);
+                        refreshOverview();
+                    });
+                });
+            }
+
+            function renderTheatresAndScreens() {
+                const thSelect = document.getElementById("sc-theatre-id");
+                thSelect.innerHTML = cachedData.theatres.map((t) =>
+                    `<option value="${t.id}">${CineVerse.escapeHtml(t.name)} (${CineVerse.escapeHtml(t.city)})</option>`
+                ).join("");
+
+                const thBody = document.getElementById("admin-theatres-tbody");
+                thBody.innerHTML = cachedData.theatres.map((t) => `
+                    <tr>
+                        <td>${t.id}</td>
+                        <td><strong>${CineVerse.escapeHtml(t.name)}</strong></td>
+                        <td>${CineVerse.escapeHtml(t.city)}</td>
+                        <td>${CineVerse.escapeHtml(t.address)}</td>
+                        <td><button type="button" class="btn btn-danger btn-sm del-th-btn" data-id="${t.id}">Delete</button></td>
+                    </tr>
+                `).join("");
+
+                thBody.querySelectorAll(".del-th-btn").forEach((btn) => {
+                    btn.addEventListener("click", async () => {
+                        const res = await CineVerse.postForm("/api/admin/theatre/delete", { id: btn.getAttribute("data-id") });
+                        notify(res.data.message || res.data.error, !res.ok);
+                        refreshOverview();
+                    });
+                });
+
+                const scBody = document.getElementById("admin-screens-tbody");
+                scBody.innerHTML = cachedData.screens.map((s) => `
+                    <tr>
+                        <td>${s.id}</td>
+                        <td>${CineVerse.escapeHtml(s.theatreName)}</td>
+                        <td>${CineVerse.escapeHtml(s.city)}</td>
+                        <td><strong>${CineVerse.escapeHtml(s.name)}</strong></td>
+                        <td>${s.totalSeats} seats</td>
+                        <td><button type="button" class="btn btn-danger btn-sm del-sc-btn" data-id="${s.id}">Delete</button></td>
+                    </tr>
+                `).join("");
+
+                scBody.querySelectorAll(".del-sc-btn").forEach((btn) => {
+                    btn.addEventListener("click", async () => {
+                        const res = await CineVerse.postForm("/api/admin/screen/delete", { id: btn.getAttribute("data-id") });
+                        notify(res.data.message || res.data.error, !res.ok);
+                        refreshOverview();
+                    });
+                });
+            }
+
+            function renderShows() {
+                document.getElementById("sh-movie-id").innerHTML = cachedData.movies.map((m) =>
+                    `<option value="${m.id}">${CineVerse.escapeHtml(m.title)}</option>`
+                ).join("");
+
+                document.getElementById("sh-screen-id").innerHTML = cachedData.screens.map((s) =>
+                    `<option value="${s.id}">${CineVerse.escapeHtml(s.theatreName)} (${CineVerse.escapeHtml(s.city)}) — ${CineVerse.escapeHtml(s.name)}</option>`
+                ).join("");
+
+                const shBody = document.getElementById("admin-shows-tbody");
+                shBody.innerHTML = cachedData.shows.map((sh) => {
+                    const pct = Math.round((sh.bookedSeats / sh.totalSeats) * 100);
+                    return `
+                        <tr>
+                            <td>${sh.id}</td>
+                            <td><strong>${CineVerse.escapeHtml(sh.movieTitle)}</strong></td>
+                            <td>${CineVerse.escapeHtml(sh.theatreName)} (${CineVerse.escapeHtml(sh.theatreCity)}) &bull; ${CineVerse.escapeHtml(sh.screenName)}</td>
+                            <td>${CineVerse.escapeHtml(sh.showDate)} at ${CineVerse.escapeHtml(sh.showTime)}</td>
+                            <td>
+                                <span class="badge badge-gold">${sh.bookedSeats} / ${sh.totalSeats} Booked (${pct}%)</span>
+                            </td>
+                            <td><button type="button" class="btn btn-danger btn-sm del-sh-btn" data-id="${sh.id}">Delete</button></td>
+                        </tr>
+                    `;
+                }).join("");
+
+                shBody.querySelectorAll(".del-sh-btn").forEach((btn) => {
+                    btn.addEventListener("click", async () => {
+                        const res = await CineVerse.postForm("/api/admin/show/delete", { id: btn.getAttribute("data-id") });
+                        notify(res.data.message || res.data.error, !res.ok);
+                        refreshOverview();
+                    });
+                });
+            }
+
+            function renderBookings() {
+                const bBody = document.getElementById("admin-bookings-tbody");
+                bBody.innerHTML = cachedData.bookings.map((b) => `
+                    <tr>
+                        <td style="font-family: monospace; font-weight: 700;">${CineVerse.escapeHtml(b.bookingCode)}</td>
+                        <td>${CineVerse.escapeHtml(b.userName)}<br><span style="font-size: 0.78rem; color: var(--text-secondary);">${CineVerse.escapeHtml(b.userEmail)}</span></td>
+                        <td>${CineVerse.escapeHtml(b.movieTitle)}</td>
+                        <td>${CineVerse.escapeHtml(b.theatreName)} &bull; ${CineVerse.escapeHtml(b.screenName)}</td>
+                        <td>${CineVerse.escapeHtml(b.showDate)} ${CineVerse.escapeHtml(b.showTime)}</td>
+                        <td style="color: var(--gold-accent); font-weight: 700;">${CineVerse.escapeHtml(b.seatLabels)}</td>
+                        <td><span class="badge ${b.status === "CONFIRMED" ? "badge-emerald" : "badge-crimson"}">${CineVerse.escapeHtml(b.status)}</span></td>
+                        <td>
+                            ${b.status === "CONFIRMED"
+                                ? `<button type="button" class="btn btn-danger btn-sm admin-cancel-btn" data-id="${b.id}">Cancel &amp; Free Seats</button>`
+                                : "-"}
+                        </td>
+                    </tr>
+                `).join("");
+
+                bBody.querySelectorAll(".admin-cancel-btn").forEach((btn) => {
+                    btn.addEventListener("click", async () => {
+                        const res = await CineVerse.postForm("/api/cancel-booking", { bookingId: btn.getAttribute("data-id") });
+                        notify(res.data.message || res.data.error, !res.ok);
+                        refreshOverview();
+                    });
+                });
+            }
+
+            function renderUsers() {
+                const uBody = document.getElementById("admin-users-tbody");
+                uBody.innerHTML = cachedData.users.map((u) => {
+                    const nextRole = u.role === "ADMIN" ? "USER" : "ADMIN";
+                    return `
+                        <tr>
+                            <td>${u.id}</td>
+                            <td><strong>${CineVerse.escapeHtml(u.name)}</strong></td>
+                            <td>${CineVerse.escapeHtml(u.email)}</td>
+                            <td>${CineVerse.escapeHtml(u.phone)}</td>
+                            <td><span class="badge ${u.role === "ADMIN" ? "badge-gold" : ""}">${CineVerse.escapeHtml(u.role)}</span></td>
+                            <td>${CineVerse.escapeHtml(u.createdAt)}</td>
+                            <td style="display: flex; gap: 8px;">
+                                <button type="button" class="btn btn-outline btn-sm role-user-btn" data-id="${u.id}" data-role="${nextRole}">Make ${nextRole}</button>
+                                <button type="button" class="btn btn-danger btn-sm del-user-btn" data-id="${u.id}">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join("");
+
+                uBody.querySelectorAll(".role-user-btn").forEach((btn) => {
+                    btn.addEventListener("click", async () => {
+                        const res = await CineVerse.postForm("/api/admin/user/role", {
+                            userId: btn.getAttribute("data-id"),
+                            role: btn.getAttribute("data-role")
+                        });
+                        notify(res.data.message || res.data.error, !res.ok);
+                        refreshOverview();
+                    });
+                });
+
+                uBody.querySelectorAll(".del-user-btn").forEach((btn) => {
+                    btn.addEventListener("click", async () => {
+                        const res = await CineVerse.postForm("/api/admin/user/delete", {
+                            userId: btn.getAttribute("data-id")
+                        });
+                        notify(res.data.message || res.data.error, !res.ok);
+                        refreshOverview();
+                    });
+                });
+            }
+
+            document.getElementById("admin-movie-form").addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const res = await CineVerse.postForm("/api/admin/movie", {
+                    id: document.getElementById("movie-id").value,
+                    title: document.getElementById("movie-title").value,
+                    genre: document.getElementById("movie-genre").value,
+                    language: document.getElementById("movie-language").value,
+                    durationMinutes: document.getElementById("movie-duration").value,
+                    rating: document.getElementById("movie-rating").value,
+                    releaseDate: document.getElementById("movie-release").value,
+                    badgeText: document.getElementById("movie-badge").value,
+                    posterColor: document.getElementById("movie-poster").value,
+                    description: document.getElementById("movie-description").value
+                });
+                notify(res.data.message || res.data.error, !res.ok);
+                document.getElementById("admin-movie-form").reset();
+                document.getElementById("movie-id").value = "0";
+                document.getElementById("movie-form-heading").textContent = "Add / Edit Movie";
+                refreshOverview();
+            });
+
+            document.getElementById("movie-reset-btn").addEventListener("click", () => {
+                document.getElementById("admin-movie-form").reset();
+                document.getElementById("movie-id").value = "0";
+                document.getElementById("movie-form-heading").textContent = "Add / Edit Movie";
+            });
+
+            document.getElementById("admin-theatre-form").addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const res = await CineVerse.postForm("/api/admin/theatre", {
+                    name: document.getElementById("th-name").value,
+                    city: document.getElementById("th-city").value,
+                    address: document.getElementById("th-address").value
+                });
+                notify(res.data.message || res.data.error, !res.ok);
+                document.getElementById("admin-theatre-form").reset();
+                refreshOverview();
+            });
+
+            document.getElementById("admin-screen-form").addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const res = await CineVerse.postForm("/api/admin/screen", {
+                    theatreId: document.getElementById("sc-theatre-id").value,
+                    name: document.getElementById("sc-name").value
+                });
+                notify(res.data.message || res.data.error, !res.ok);
+                document.getElementById("admin-screen-form").reset();
+                refreshOverview();
+            });
+
+            document.getElementById("admin-show-form").addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const res = await CineVerse.postForm("/api/admin/show", {
+                    movieId: document.getElementById("sh-movie-id").value,
+                    screenId: document.getElementById("sh-screen-id").value,
+                    showDate: document.getElementById("sh-date").value,
+                    showTime: document.getElementById("sh-time").value
+                });
+                notify(res.data.message || res.data.error, !res.ok);
+                refreshOverview();
+            });
+
+            refreshOverview();
+        });
+    </script>
+</body>
+</html>

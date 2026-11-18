@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineVerse — Standalone Cinema Seat Reservation</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div id="navbar-host"></div>
+
+    <main class="main-container">
+        <section class="hero-banner">
+            <span class="hero-tag">Zero-Friction Instant Reservation</span>
+            <h1 class="hero-title">Reserve Your Auditorium Seat in Seconds.</h1>
+            <p class="hero-subtitle">
+                Explore IMAX Laser and Dolby Atmos showtimes across premier theatres. Choose your exact Regular, Premium, or Recliner seats and receive an instant digital pass with zero checkout delays.
+            </p>
+            <div style="display: flex; gap: 14px; flex-wrap: wrap; margin-top: 8px;">
+                <a href="/movies.html" class="btn btn-primary">Browse All Movies &amp; Showtimes</a>
+                <a href="/my-bookings.html" class="btn btn-outline">View My Ticket Passes</a>
+            </div>
+        </section>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="font-size: 1.5rem; font-weight: 800;">Now Showing in Theatres</h2>
+            <a href="/movies.html" class="btn btn-outline btn-sm">Filter by City, Genre &amp; Language</a>
+        </div>
+
+        <div id="featured-movies-grid" class="movies-grid"></div>
+    </main>
+
+    <footer class="footer">
+        CineVerse Standalone Java Cinema Booking System &bull; Built on Standard JDK HttpServer &amp; SQLite
+    </footer>
+
+    <script src="/js/app.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            await CineVerse.initNavbar("home");
+            const grid = document.getElementById("featured-movies-grid");
+
+            try {
+                const [moviesRes, showsRes] = await Promise.all([
+                    fetch("/api/movies"),
+                    fetch("/api/shows")
+                ]);
+                const moviesData = await moviesRes.json();
+                const showsData = await showsRes.json();
+
+                const showsByMovie = {};
+                showsData.forEach((sh) => {
+                    if (!showsByMovie[sh.movieId]) {
+                        showsByMovie[sh.movieId] = [];
+                    }
+                    showsByMovie[sh.movieId].push(sh);
+                });
+
+                grid.innerHTML = moviesData.movies.map((m) => {
+                    const mShows = (showsByMovie[m.id] || []).slice(0, 3);
+                    const showButtons = mShows.length > 0
+                        ? mShows.map((s) => `
+                            <a href="/seat-selection.html?showId=${s.id}" class="showtime-pill">
+                                ${CineVerse.escapeHtml(s.theatreCity)} &bull; ${CineVerse.escapeHtml(s.showTime)}
+                            </a>
+                        `).join("")
+                        : `<span class="badge">Showtimes Updating</span>`;
+
+                    return `
+                        <article class="movie-card">
+                            <div class="movie-poster-art" style="background: ${CineVerse.escapeHtml(m.posterColor)};">
+                                <span class="movie-badge-top">${CineVerse.escapeHtml(m.badgeText)}</span>
+                                <span class="movie-rating-pill">${CineVerse.escapeHtml(m.rating)}</span>
+                                <h3 class="movie-poster-title">${CineVerse.escapeHtml(m.title)}</h3>
+                            </div>
+                            <div class="movie-card-body">
+                                <div class="movie-meta">
+                                    <span class="badge badge-crimson">${CineVerse.escapeHtml(m.genre)}</span>
+                                    <span class="badge">${CineVerse.escapeHtml(m.language)}</span>
+                                    <span class="badge">${m.durationMinutes} mins</span>
+                                </div>
+                                <p class="movie-synopsis">${CineVerse.escapeHtml(m.description)}</p>
+                                <div class="showtime-list">
+                                    <span class="theatre-group-label">Quick Showtimes (Click to Pick Seats):</span>
+                                    <div class="showtime-pills">${showButtons}</div>
+                                </div>
+                            </div>
+                        </article>
+                    `;
+                }).join("");
+            } catch (e) {
+                grid.innerHTML = `<div class="alert-box alert-error">Failed to load movies.</div>`;
+            }
+        });
+    </script>
+</body>
+</html>

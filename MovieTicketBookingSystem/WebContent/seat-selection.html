@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Auditorium Seats — CineVerse</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div id="navbar-host"></div>
+
+    <main class="main-container">
+        <div id="show-header" style="margin-bottom: 24px;"></div>
+        <div id="seat-alert" style="display: none;"></div>
+
+        <section class="auditorium-card">
+            <div class="screen-container">
+                <div class="screen-curve"></div>
+                <div class="screen-label">All Eyes This Way — Curved Cinema Screen</div>
+            </div>
+
+            <div class="seat-legend">
+                <div class="legend-item">
+                    <span class="legend-swatch swatch-available"></span>
+                    <span>Available (Regular / Premium)</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-swatch swatch-recliner"></span>
+                    <span>Recliner Tier (Rows G–H)</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-swatch swatch-selected"></span>
+                    <span>Selected</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-swatch swatch-booked"></span>
+                    <span>Booked</span>
+                </div>
+            </div>
+
+            <div class="seat-grid-wrapper">
+                <div id="seat-rows-container" class="seat-rows"></div>
+            </div>
+
+            <div class="booking-summary-bar">
+                <div>
+                    <div style="font-size: 0.84rem; color: var(--text-secondary); text-transform: uppercase;">Selected Seats</div>
+                    <div id="selected-seats-display" style="font-size: 1.2rem; font-weight: 800; margin-top: 2px;">None selected</div>
+                </div>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <a href="/movies.html" class="btn btn-outline">Back to Showtimes</a>
+                    <button type="button" id="book-seats-btn" class="btn btn-primary" disabled>Book Seats</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        CineVerse Standalone Java Cinema Booking System
+    </footer>
+
+    <script src="/js/app.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            await CineVerse.initNavbar("movies");
+
+            const params = new URLSearchParams(window.location.search);
+            const showId = params.get("showId");
+            const headerEl = document.getElementById("show-header");
+            const rowsEl = document.getElementById("seat-rows-container");
+            const selectedDisplay = document.getElementById("selected-seats-display");
+            const bookBtn = document.getElementById("book-seats-btn");
+            const alertBox = document.getElementById("seat-alert");
+
+            if (!showId) {
+                window.location.href = "/movies.html";
+                return;
+            }
+
+            const selectedSeats = new Map();
+
+            function updateSelectionUI() {
+                if (selectedSeats.size === 0) {
+                    selectedDisplay.textContent = "None selected";
+                    bookBtn.disabled = true;
+                } else {
+                    const codes = Array.from(selectedSeats.values()).map((s) => `${s.seatLabel} (${s.category})`);
+                    selectedDisplay.textContent = codes.join(", ");
+                    bookBtn.disabled = false;
+                }
+            }
+
+            async function loadSeatMap() {
+                const res = await fetch(`/api/seats?showId=${encodeURIComponent(showId)}`);
+                if (!res.ok) {
+                    headerEl.innerHTML = `<div class="alert-box alert-error">Showtime not found.</div>`;
+                    return;
+                }
+                const data = await res.json();
+                const { show, movie, seats } = data;
+
+                headerEl.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;">
+                        <div>
+                            <span class="badge badge-crimson">${CineVerse.escapeHtml(show.movieGenre)} &bull; ${CineVerse.escapeHtml(show.movieLanguage)}</span>
+                            <h1 style="font-size: 2rem; font-weight: 800; margin-top: 6px;">${CineVerse.escapeHtml(show.movieTitle)}</h1>
+                            <p style="color: var(--text-secondary);">
+                                ${CineVerse.escapeHtml(show.theatreName)} (${CineVerse.escapeHtml(show.theatreCity)}) &bull;
+                                <strong>${CineVerse.escapeHtml(show.screenName)}</strong> &bull;
+                                ${CineVerse.escapeHtml(show.showDate)} at ${CineVerse.escapeHtml(show.showTime)}
+                            </p>
+                        </div>
+                        <div class="badge badge-gold" style="font-size: 0.9rem; padding: 6px 14px;">
+                            ${show.availableSeats} / ${show.totalSeats} Seats Available
+                        </div>
+                    </div>
+                `;
+
+                const rowsMap = {};
+                seats.forEach((s) => {
+                    if (!rowsMap[s.seatRow]) {
+                        rowsMap[s.seatRow] = [];
+                    }
+                    rowsMap[s.seatRow].push(s);
+                });
+
+                const rowOrder = ["A", "B", "C", "D", "E", "F", "G", "H"];
+                let html = "";
+
+                rowOrder.forEach((rLabel) => {
+                    if (rLabel === "A") {
+                        html += `<div class="tier-divider">Regular Tier (Rows A–C)</div>`;
+                    } else if (rLabel === "D") {
+                        html += `<div class="tier-divider">Premium Tier (Rows D–F)</div>`;
+                    } else if (rLabel === "G") {
+                        html += `<div class="tier-divider" style="color: var(--gold-accent);">Recliner Lounge Tier (Rows G–H)</div>`;
+                    }
+
+                    const rowSeats = rowsMap[rLabel] || [];
+                    const buttonsHtml = rowSeats.map((seat) => {
+                        const aisleClass = (seat.seatCol === 3 || seat.seatCol === 9) ? "aisle-gap" : "";
+                        const tierClass = seat.category === "Recliner" ? "tier-recliner" : "";
+                        const bookedClass = seat.booked ? "booked" : "";
+                        const isSelected = selectedSeats.has(seat.id) ? "selected" : "";
+
+                        return `
+                            <button
+                                type="button"
+                                class="seat-btn ${aisleClass} ${tierClass} ${bookedClass} ${isSelected}"
+                                data-id="${seat.id}"
+                                data-label="${CineVerse.escapeHtml(seat.seatLabel)}"
+                                data-category="${CineVerse.escapeHtml(seat.category)}"
+                                ${seat.booked ? "disabled" : ""}
+                                title="${CineVerse.escapeHtml(seat.seatLabel)} - ${CineVerse.escapeHtml(seat.category)}"
+                            >
+                                ${CineVerse.escapeHtml(seat.seatLabel)}
+                            </button>
+                        `;
+                    }).join("");
+
+                    html += `
+                        <div class="seat-row">
+                            <span class="row-label">${rLabel}</span>
+                            ${buttonsHtml}
+                            <span class="row-label">${rLabel}</span>
+                        </div>
+                    `;
+                });
+
+                rowsEl.innerHTML = html;
+
+                rowsEl.querySelectorAll(".seat-btn:not(.booked)").forEach((btn) => {
+                    btn.addEventListener("click", () => {
+                        const id = parseInt(btn.getAttribute("data-id"), 10);
+                        const seatLabel = btn.getAttribute("data-label");
+                        const category = btn.getAttribute("data-category");
+
+                        if (selectedSeats.has(id)) {
+                            selectedSeats.delete(id);
+                            btn.classList.remove("selected");
+                        } else {
+                            selectedSeats.set(id, { id, seatLabel, category });
+                            btn.classList.add("selected");
+                        }
+                        updateSelectionUI();
+                    });
+                });
+            }
+
+            bookBtn.addEventListener("click", async () => {
+                alertBox.style.display = "none";
+
+                if (!CineVerse.sessionUser) {
+                    window.location.href = `/login.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+                    return;
+                }
+
+                const seatIds = Array.from(selectedSeats.keys()).join(",");
+                bookBtn.disabled = true;
+                bookBtn.textContent = "Booking Seats...";
+
+                const result = await CineVerse.postForm("/api/book", { showId, seatIds });
+                if (!result.ok) {
+                    alertBox.className = "alert-box alert-error";
+                    alertBox.textContent = result.data.error || "Could not reserve seats.";
+                    alertBox.style.display = "block";
+                    bookBtn.textContent = "Book Seats";
+                    selectedSeats.clear();
+                    updateSelectionUI();
+                    await loadSeatMap();
+                    return;
+                }
+
+                window.location.href = `/booking-confirmation.html?id=${result.data.booking.id}`;
+            });
+
+            await loadSeatMap();
+        });
+    </script>
+</body>
+</html>
